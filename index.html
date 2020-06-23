@@ -1,0 +1,223 @@
+<!--this is the application as handed over from KC-->
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ArcGIS JavaScript Tutorials: Display a Web Map</title>
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #topbar {
+            background: #fff;
+            padding: 10px;
+        }
+
+        .action-button {
+            font-size: 16px;
+            background-color: transparent;
+            border: 1px solid #d3d3d3;
+            color: #6e6e6e;
+            height: 32px;
+            width: 32px;
+            text-align: center;
+            box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-button:hover,
+        .action-button:focus {
+            background: #0079c1;
+            color: #e4e4e4;
+        }
+
+        .active {
+            background: #0079c1;
+            color: #e4e4e4;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.15/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.15/"></script>
+    <script>
+        require([
+            "esri/WebMap",
+            "esri/views/MapView",
+            "esri/widgets/Search",
+            "esri/widgets/LayerList",
+            "esri/widgets/Legend",
+            "esri/widgets/CoordinateConversion",
+            "esri/widgets/DistanceMeasurement2D",
+            "esri/widgets/AreaMeasurement2D",
+            "esri/widgets/Expand",
+        ], function (WebMap, MapView, Search, LayerList, Legend, CoordinateConversion, DistanceMeasurement2D, AreaMeasurement2D, Expand) {
+            var activeWidget = null;
+
+            var webmap = new WebMap({
+                portalItem: {
+                    id: "8f53eb9f12c642acba422dd1ad6f333c"
+                }
+            });
+
+            var view = new MapView({
+                container: "viewDiv",
+                map: webmap
+            });
+
+
+            var searchWidget = new Search({
+                view: view
+            });
+            // Add the search widget to the top right corner of the view
+            view.ui.add(searchWidget, {
+                position: "top-right"
+            });
+            view.ui.add("topbar", "top-right");
+
+            document
+                .getElementById("distanceButton")
+                .addEventListener("click", function () {
+                    setActiveWidget(null);
+                    if (!this.classList.contains("active")) {
+                        setActiveWidget("distance");
+                    } else {
+                        setActiveButton(null);
+                    }
+                });
+
+
+
+
+            document
+                .getElementById("areaButton")
+                .addEventListener("click", function () {
+                    setActiveWidget(null);
+                    if (!this.classList.contains("active")) {
+                        setActiveWidget("area");
+                    } else {
+                        setActiveButton(null);
+                    }
+                });
+
+            function setActiveWidget(type) {
+                switch (type) {
+                    case "distance":
+                        activeWidget = new DistanceMeasurement2D({
+                            view: view
+                        });
+
+
+                        // skip the initial 'new measurement' button
+                        activeWidget.viewModel.newMeasurement();
+
+                        view.ui.add(activeWidget, "top-right");
+                        setActiveButton(document.getElementById("distanceButton"));
+                        break;
+                    case "area":
+                        activeWidget = new AreaMeasurement2D({
+                            view: view
+                        });
+
+                        // skip the initial 'new measurement' button
+                        activeWidget.viewModel.newMeasurement();
+
+                        view.ui.add(activeWidget, "top-right");
+                        setActiveButton(document.getElementById("areaButton"));
+                        break;
+                    case null:
+                        if (activeWidget) {
+                            view.ui.remove(activeWidget);
+                            activeWidget.destroy();
+                            activeWidget = null;
+                        }
+                        break;
+                }
+            }
+
+            function setActiveButton(selectedButton) {
+                // focus the view to activate keyboard shortcuts for sketching
+                view.focus();
+                var elements = document.getElementsByClassName("active");
+                for (var i = 0; i < elements.length; i++) {
+                    elements[i].classList.remove("active");
+                }
+                if (selectedButton) {
+                    selectedButton.classList.add("active");
+                }
+            }
+
+            layerList = new LayerList({
+                container: document.createElement("div"),
+                view: view
+            });
+            // Add widget to the top right corner of the view
+
+            layerListExpand = new Expand({
+                expandIconClass: "esri-icon-layers",  // see https://developers.arcgis.com/javascript/latest/guide/esri-icon-font/
+                // expandTooltip: "Expand LayerList", // optional, defaults to "Expand" for English locale
+                view: view,
+                content: layerList.domNode
+            });
+
+            view.when(function () {
+                // get the first layer in the collection of operational layers in the WebMap
+                // when the resources in the MapView have loaded.
+                var featureLayer = webmap.layers.getItemAt(0);
+
+                view.ui.add(layerListExpand, "top-right");
+
+                legend = new Legend({
+                    container: document.createElement("div"),
+                    view: view
+                });
+
+                legendExpand = new Expand({
+                    expandIconClass: "esri-icon-layer-list",  // see https://developers.arcgis.com/javascript/latest/guide/esri-icon-font/
+                    // expandTooltip: "Expand LayerList", // optional, defaults to "Expand" for English locale
+                    view: view,
+                    content: legend.domNode
+                });
+
+                view.ui.add(legendExpand, "top-right");
+
+
+                ccWidget = new CoordinateConversion({
+                    container: document.createElement("div"),
+                    view: view
+                });
+
+                ccWidgetExpand = new Expand({
+                    expandIconClass: "esri-icon-globe",  // see https://developers.arcgis.com/javascript/latest/guide/esri-icon-font/
+                    // expandTooltip: "Expand LayerList", // optional, defaults to "Expand" for English locale
+                    view: view,
+                    content: ccWidget.domNode
+                });
+
+                view.ui.add(ccWidgetExpand, "top-right");
+                // add the toolbar for the measurement widgets
+
+            });
+        });
+    </script>
+</head>
+<body>
+<div id="viewDiv"></div>
+<div id="topbar">
+    <button
+            class="action-button esri-icon-measure-line"
+            id="distanceButton"
+            type="button"
+            title="Measure distance between two or more points"
+    ></button>
+    <button
+            class="action-button esri-icon-measure-area"
+            id="areaButton"
+            type="button"
+            title="Measure area"
+    ></button>
+</div>
+</body>
+</html>
